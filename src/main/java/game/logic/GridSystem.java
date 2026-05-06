@@ -83,15 +83,18 @@ public class GridSystem {
      * resolve target conflicts (row-major winning source), apply moves, smelt furnaces,
      * then spawn from droppers that started empty.
      */
+
     public void tick() {
+        // 1. Snapshot the starting state
         boolean[][] hadItemAtStart = new boolean[width][height];
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 Machine m = cells[x][y];
-                hadItemAtStart[x][y] = m != null && m.getCurrentItem() != null;
+                hadItemAtStart[x][y] = (m != null && m.getCurrentItem() != null);
             }
         }
 
+        // 2. Gather intentions
         List<OutgoingTransfer> pending = new ArrayList<>();
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
@@ -102,40 +105,44 @@ public class GridSystem {
             }
         }
 
-        Map<String, List<OutgoingTransfer>> byTarget = new HashMap<>();
+        // 3 & 4. Group by target AND resolve conflicts instantly
+        Map<Integer, OutgoingTransfer> winnersMap = new HashMap<>();
         for (OutgoingTransfer transfer : pending) {
-            String key = transfer.toX() + "," + transfer.toY();
-            byTarget.computeIfAbsent(key, k -> new ArrayList<>()).add(transfer);
+            // Create a fast 1D integer key
+            int targetKey = transfer.toY() * width + transfer.toX();
+
+            winnersMap.compute(targetKey, (key, currentWinner) -> {
+                if (currentWinner == null) return transfer; // First one here wins by default
+
+                // If collision: keep the one with the lowest X (or lowest Y if X is tied)
+                if (transfer.fromX() < currentWinner.fromX() ||
+                        (transfer.fromX() == currentWinner.fromX() && transfer.fromY() < currentWinner.fromY())) {
+                    return transfer;
+                }
+                return currentWinner;
+            });
         }
 
-        List<OutgoingTransfer> winners = new ArrayList<>();
-        for (List<OutgoingTransfer> group : byTarget.values()) {
-            group.sort(Comparator.comparingInt(OutgoingTransfer::fromX).thenComparingInt(OutgoingTransfer::fromY));
-            winners.add(group.get(0));
-        }
+        // Optional: Sort the final execution order if strict chronological determinism is required
+        List<OutgoingTransfer> winners = new ArrayList<>(winnersMap.values());
         winners.sort(Comparator.comparingInt(OutgoingTransfer::fromX).thenComparingInt(OutgoingTransfer::fromY));
 
+        // 5. Execute the winning moves
         for (OutgoingTransfer transfer : winners) {
             Machine source = getMachine(transfer.fromX(), transfer.fromY());
             Machine destination = getMachine(transfer.toX(), transfer.toY());
-            if (source == null || destination == null) {
-                continue;
-            }
-            if (source.getCurrentItem() != transfer.item()) {
-                continue;
-            }
-            if (hadItemAtStart[transfer.toX()][transfer.toY()]) {
-                continue;
-            }
-            if (!destination.wouldAccept(transfer.item())) {
-                continue;
-            }
+
+            if (source == null || destination == null) continue;
+            if (source.getCurrentItem() != transfer.item()) continue;
+            if (!destination.wouldAccept(transfer.item())) continue;
+
             source.clearCurrentItem();
             if (!destination.acceptItem(transfer.item())) {
-                source.setCurrentItem(transfer.item());
+                source.setCurrentItem(transfer.item()); // Rollback if rejected
             }
         }
 
+        // 6. Post-Tick Processing (Smelting, Spawning)
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 Machine machine = cells[x][y];
