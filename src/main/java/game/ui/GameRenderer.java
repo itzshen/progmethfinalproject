@@ -23,43 +23,41 @@ public class GameRenderer {
     }
 
     private void preloadImages() {
-        // 1. Your existing loop for MachineTypes...
+        // 1. Load all Machines from the "machine" folder
         for (MachineType type : MachineType.values()) {
             if (type == MachineType.NONE || type.getCategory() == null) continue;
+
             if (type.getFallBackText() == null) {
-                imageCache.put(type.getImageName(), loadRequiredAsset(type.getImageName()));
+                imageCache.put(type.getImageName(), loadRequiredAsset(type.getImageName(), "machine"));
             } else {
-                imageCache.put(type.getImageName(), getImage(type.getImageName(), type.getFallBackText()));
+                imageCache.put(type.getImageName(), getImage(type.getImageName(), type.getFallBackText(), "machine"));
             }
         }
 
-        // 2. NEW: Dynamically preload every ItemType!
+        // 2. Load all Items from the "item" folder
         for (ItemType item : ItemType.values()) {
-            // Create a smart 2-letter fallback text (e.g., "COAL" -> "Co")
             String fallback = item.name().substring(0, Math.min(2, item.name().length()));
             fallback = fallback.substring(0, 1).toUpperCase() + fallback.substring(1).toLowerCase();
 
-            // Add it to the cache using your existing graceful degradation method
-            imageCache.put(item.getImageName(), getImage(item.getImageName(), fallback));
+            imageCache.put(item.getImageName(), getImage(item.getImageName(), fallback, "item"));
         }
     }
 
-    private Image loadRequiredAsset(String fileName) {
-        String path = "/images/" + fileName;
+    private Image loadRequiredAsset(String fileName, String subfolder) {
+        String path = "/images/" + subfolder + "/" + fileName;
         InputStream stream = GameRenderer.class.getResourceAsStream(path);
 
-        // If the stream is null, the file literally does not exist in the resources folder
         if (stream == null) {
             System.err.println("CRITICAL FAILURE: Missing required asset: " + path);
-            System.err.println("Did you forget to put " + fileName + " in the resources/images folder?");
-            System.exit(1); // Force the game to safely shut down
+            System.exit(1);
         }
 
         return new Image(stream);
     }
 
-    private Image getImage(String filename, String fallbackText) {
-        String path = "/images/" + filename;
+    private Image getImage(String filename, String fallbackText, String subfolder) {
+        String path = "/images/" + subfolder + "/" + filename;
+
         try (InputStream stream = GameRenderer.class.getResourceAsStream(path)) {
             if (stream != null) {
                 Image loaded = new Image(stream);
