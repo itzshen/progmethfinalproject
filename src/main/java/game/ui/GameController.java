@@ -1,311 +1,169 @@
 package game.ui;
 
 import game.logic.*;
-import javafx.animation.AnimationTimer;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
-import javafx.scene.image.ImageView;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
-import javafx.application.Platform;
-
+import javafx.scene.input.KeyCode;
 
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.ResourceBundle;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("CallToPrintStackTrace")
 public class GameController implements Initializable {
 
     // ==========================================
-    // Constants & Configuration
+    // Constants
     // ==========================================
-    private static final double TILE_SIZE = 50.0;
-    private static final double LOGIC_INTERVAL_SEC = 0.5;
-    private static final double PAN_SPEED_PX_PER_SEC = 280.0;
+    private static final double TILE_SIZE = GameConstants.TILE_SIZE;
 
     // ==========================================
     // FXML UI Components
     // ==========================================
-    @FXML private Canvas gameCanvas;
-    @FXML private VBox shopPopup;
-    @FXML private HBox inventoryBox;
-    @FXML private Label moneyLabel;
-    @FXML private Label shopHintLabel;
+    @FXML private Canvas  gameCanvas;
+    @FXML private VBox    shopPopup;
+    @FXML private HBox    inventoryBox;
+    @FXML private Label   moneyLabel;
+    @FXML private Label   shopHintLabel;
     @FXML private TabPane shopTabPane;
 
     // ==========================================
-    // Core Game Systems & Managers
+    // Core Systems
     // ==========================================
-    private final GridSystem logicGrid = new GridSystem(20, 20);
-    private final PlayerBank bank = new PlayerBank(500.0);
-    private final GameRenderer renderer = new GameRenderer();
-    private final CameraManager camera = new CameraManager();
-    private ShopManager shopManager; // Initialized in initialize()
+    private final GridSystem    logicGrid = new GridSystem(20, 20);
+    private final PlayerBank    bank      = new PlayerBank(500.0);
+    private final GameRenderer  renderer  = new GameRenderer();
+    private final CameraManager camera    = new CameraManager();
 
     // ==========================================
-    // User Input & Interaction State
+    // Managers
     // ==========================================
-    private final Set<KeyCode> activeKeys = ConcurrentHashMap.newKeySet();
-    private Direction placementFacing = Direction.RIGHT;
-    private double mouseWorldX;
-    private double mouseWorldY;
+    private ShopManager      shopManager;
+    private InputHandler     inputHandler;
+    private GameLoopManager  gameLoopManager;
+    private PlacementManager placementManager;
 
     // ==========================================
-    // Game Loop & Timing
+    // Initialization
     // ==========================================
-    private AnimationTimer gameLoop;
-    private ScheduledExecutorService logicThread;
-    private long lastFrameNanos;
-
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // 1. Initialize the new Shop Manager
+        initShop();
+        initPlacement();
+        initInput();
+        initGameLoop();
+        bindCanvas();
+        bindSceneLifecycle();
+    }
+
+    // ==========================================
+    // Wiring — each method sets up one manager
+    // ==========================================
+
+    private void initShop() {
         shopManager = new ShopManager(
                 bank,
                 inventoryBox,
                 moneyLabel,
-                renderer::imageForMachineType, // Tell ShopManager to ask the Renderer for images
-                this::updateShopHint           // Callback to update hint text when inventory changes
+                renderer::imageForMachineType,
+                () -> { if (placementManager != null) placementManager.updateHint(); }
         );
-        generateShopButtons();
-
+        ShopUIBuilder.build(shopTabPane, renderer::imageForMachineType, shopManager::attemptBuy);
         shopManager.refreshUI();
+    }
 
-        // 2. Attach Canvas Mouse Handlers (Required for placing and holograms)
-        gameCanvas.setOnMouseClicked(this::handleCanvasClick);
-        gameCanvas.setOnMouseMoved(this::handleCanvasMouseMove);
+    private void initPlacement() {
+        placementManager = new PlacementManager(
+                logicGrid,
+                bank,
+                () -> shopPopup != null && shopPopup.isVisible(),
+                shopManager::getActiveSelection,
+                shopManager::getInventoryCount,
+                shopManager::consumeFromInventory,
+                shopManager::refreshUI,
+                text -> { if (shopHintLabel != null) shopHintLabel.setText(text); }
+        );
+    }
 
-        // 3. Listen for scene changes to hook up keyboard/scroll events and start the loop
+    private void initInput() {
+        inputHandler = new InputHandler(
+                this::toggleShop,
+                placementManager::cyclePlacementFacing,
+                camera::applyZoom,
+                () -> shopPopup != null && shopPopup.isVisible()
+        );
+    }
+
+    private void initGameLoop() {
+        gameLoopManager = new GameLoopManager(
+                this::onRenderFrame,
+                this::onLogicTick
+        );
+    }
+
+    private void bindCanvas() {
+        gameCanvas.setOnMouseClicked(placementManager::handleCanvasClick);
+        gameCanvas.setOnMouseMoved(placementManager::handleCanvasMouseMove);
+    }
+
+    private void bindSceneLifecycle() {
         gameCanvas.sceneProperty().addListener((obs, oldScene, newScene) -> {
             if (oldScene != null) {
-                detachSceneHandlers(oldScene);
-                if (gameLoop != null) {
-                    gameLoop.stop();
-                    gameLoop = null;
-                }
-
-                if (logicThread != null && !logicThread.isShutdown()) {
-                    logicThread.shutdownNow();
-                }
+                inputHandler.detach(oldScene);
+                gameLoopManager.stop();
             }
             if (newScene != null) {
-                setupControls(newScene);
-                startGameLoop();
+                inputHandler.attach(newScene);
+                gameLoopManager.start();
             }
         });
     }
 
-    private void setupControls(Scene scene) {
-        scene.addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
-        scene.addEventHandler(KeyEvent.KEY_RELEASED, this::handleKeyReleased);
-        scene.addEventHandler(ScrollEvent.SCROLL, this::handleScroll);
-    }
+    // ==========================================
+    // Game Loop Callbacks
+    // ==========================================
 
-    private void detachSceneHandlers(Scene scene) {
-        scene.removeEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
-        scene.removeEventHandler(KeyEvent.KEY_RELEASED, this::handleKeyReleased);
-        scene.removeEventHandler(ScrollEvent.SCROLL, this::handleScroll);
-    }
-
-    private void handleKeyPressed(KeyEvent event) {
-        KeyCode code = event.getCode();
-
-        if (shopPopup != null && shopPopup.isVisible()) {
-            if (code == KeyCode.R) {
-                cyclePlacementFacing();
-                updateShopHint();
-            } else if (code == KeyCode.B) {
-                toggleShop();
-            }
-            return;
+    private void onRenderFrame(double dtSec) {
+        if (dtSec > 0) {
+            double pan = GameLoopManager.PAN_SPEED_PX_PER_SEC * dtSec;
+            double dx = 0, dy = 0;
+            if (inputHandler.getActiveKeys().contains(KeyCode.W)) dy += pan;
+            if (inputHandler.getActiveKeys().contains(KeyCode.S)) dy -= pan;
+            if (inputHandler.getActiveKeys().contains(KeyCode.A)) dx += pan;
+            if (inputHandler.getActiveKeys().contains(KeyCode.D)) dx -= pan;
+            camera.pan(dx, dy);
         }
 
-        if (code == KeyCode.B) {
-            toggleShop();
-            return;
-        }
-        if (code == KeyCode.R) {
-            cyclePlacementFacing();
-            updateShopHint();
-            return;
-        }
+        double worldW = logicGrid.getWidth()  * TILE_SIZE;
+        double worldH = logicGrid.getHeight() * TILE_SIZE;
+        camera.applyTransformsAndClamp(gameCanvas, worldW, worldH);
 
-        activeKeys.add(code);
-    }
-
-    private void handleKeyReleased(KeyEvent event) {
-        if (shopPopup != null && shopPopup.isVisible()) {
-            return;
-        }
-        activeKeys.remove(event.getCode());
-    }
-
-    private void handleScroll(ScrollEvent event) {
-        if (shopPopup != null && shopPopup.isVisible()) return;
-        double factor = event.getDeltaY() > 0 ? 1.08 : 1 / 1.08;
-        camera.applyZoom(factor);
-        event.consume();
-    }
-
-    private void startGameLoop() {
-        lastFrameNanos = 0;
-        gameLoop = new AnimationTimer() {
-            @Override
-            public void handle(long now) {
-                double dtSec = (lastFrameNanos == 0) ? 0 : (now - lastFrameNanos) / 1_000_000_000.0;
-                lastFrameNanos = now;
-
-                if (dtSec > 0) {
-                    double pan = PAN_SPEED_PX_PER_SEC * dtSec;
-                    double dx = 0, dy = 0;
-                    if (activeKeys.contains(KeyCode.W)) dy += pan;
-                    if (activeKeys.contains(KeyCode.S)) dy -= pan;
-                    if (activeKeys.contains(KeyCode.A)) dx += pan;
-                    if (activeKeys.contains(KeyCode.D)) dx -= pan;
-                    camera.pan(dx, dy);
-                }
-
-                camera.applyTransformsAndClamp(gameCanvas, logicGrid.getWidth() * TILE_SIZE, logicGrid.getHeight() * TILE_SIZE);
-                renderer.render(gameCanvas, logicGrid, shopManager, mouseWorldX, mouseWorldY, placementFacing, shopPopup.isVisible());
-            }
-        };
-        gameLoop.start();
-
-        logicThread = Executors.newSingleThreadScheduledExecutor();
-        long intervalMs = (long) (LOGIC_INTERVAL_SEC * 1000);
-
-        logicThread.scheduleAtFixedRate(() -> {
-            try {
-                logicGrid.tick();
-                Platform.runLater(() -> shopManager.refreshUI());
-            } catch (Exception e) {
-                System.err.println("Error in Logic Thread:");
-                e.printStackTrace();
-            }
-        }, intervalMs, intervalMs, TimeUnit.MILLISECONDS);
-    }
-
-    private Machine createMachine(MachineType s) {
-        return s.create(placementFacing, bank);
-    }
-
-    @FXML
-    void toggleShop() {
-        boolean next = !shopPopup.isVisible();
-        shopPopup.setVisible(next);
-        if (next) {
-            activeKeys.clear();
-        }
-    }
-
-    private void generateShopButtons() {
-        if (shopTabPane == null) return;
-        shopTabPane.getTabs().clear();
-
-        // 1. Create a Tab and a TilePane for every Category first
-        Map<MachineCategory, TilePane> categoryPanes = new HashMap<>();
-
-        for (MachineCategory cat : MachineCategory.values()) {
-            TilePane tilePane = new TilePane();
-            tilePane.setPrefColumns(2);
-            tilePane.setHgap(10.0);
-            tilePane.setVgap(10.0);
-            tilePane.setStyle("-fx-padding: 10;");
-
-            ScrollPane scrollPane = new ScrollPane(tilePane);
-            scrollPane.setFitToWidth(true);
-            scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
-
-            Tab tab = new Tab(cat.getDisplayName());
-            tab.setContent(scrollPane);
-
-            shopTabPane.getTabs().add(tab);
-            categoryPanes.put(cat, tilePane); // Save the reference so we can add buttons to it later!
-        }
-
-        // 2. Loop through the machines and put them in their assigned Tab
-        for (MachineType type : MachineType.values()) {
-            if (type == MachineType.NONE || type.getCategory() == null) continue;
-
-            Button buyBtn = new Button("Buy " + type.name() + " ($" + type.getCost() + ")");
-            buyBtn.getStyleClass().add("shop-button");
-
-            ImageView icon = new ImageView(renderer.imageForMachineType(type));
-            icon.setFitWidth(32);
-            icon.setFitHeight(32);
-            buyBtn.setGraphic(icon);
-
-            buyBtn.setOnAction(e -> shopManager.attemptBuy(type));
-
-            // Look up the correct TilePane from our map, and add the button to it!
-            categoryPanes.get(type.getCategory()).getChildren().add(buyBtn);
-        }
-    }
-
-    private void updateShopHint() {
-        // Safety check to ensure the UI and ShopManager are ready
-        if (shopHintLabel == null || shopManager == null) {
-            return;
-        }
-
-        // Ask the ShopManager what is currently selected
-        MachineType currentSelection = shopManager.getActiveSelection();
-        int qty = shopManager.getInventoryCount(currentSelection);
-
-        // Update the label text
-        shopHintLabel.setText(
-                currentSelection == MachineType.NONE
-                        ? "Pick a slot from inventory. Facing: " + placementFacing + " (R rotates)."
-                        : "Selected: " + currentSelection + " (x" + qty + ") | Facing: " + placementFacing + " (R rotates)"
+        renderer.render(
+                gameCanvas, logicGrid, shopManager,
+                placementManager.getMouseWorldX(),
+                placementManager.getMouseWorldY(),
+                placementManager.getPlacementFacing(),
+                shopPopup.isVisible()
         );
     }
 
-    private void cyclePlacementFacing() {
-        placementFacing = switch (placementFacing) {
-            case RIGHT -> Direction.DOWN;
-            case DOWN -> Direction.LEFT;
-            case LEFT -> Direction.UP;
-            case UP -> Direction.RIGHT;
-        };
+    private void onLogicTick() {
+        logicGrid.tick();
+        Platform.runLater(shopManager::refreshUI);
     }
 
-    private void handleCanvasClick(MouseEvent event) {
-        if (shopPopup != null && shopPopup.isVisible()) return;
-        MachineType selection = shopManager.getActiveSelection();
-        if (selection == MachineType.NONE) return;
-        if (shopManager.getInventoryCount(selection) <= 0) {
-            shopManager.refreshUI();
-            return;
-        }
+    // ==========================================
+    // Shop Toggle
+    // ==========================================
 
-        int gx = (int) Math.floor(event.getX() / TILE_SIZE);
-        int gy = (int) Math.floor(event.getY() / TILE_SIZE);
-
-        if (!logicGrid.isInside(gx, gy)) return;
-        Machine toPlace = createMachine(selection);
-        if (logicGrid.placeMachine(gx, gy, toPlace)) {
-            shopManager.consumeFromInventory(selection);
-        }
-    }
-
-    private void handleCanvasMouseMove(MouseEvent event) {
-        if (shopPopup != null && shopPopup.isVisible()) return;
-        mouseWorldX = event.getX();
-        mouseWorldY = event.getY();
+    @FXML
+    void toggleShop() {
+        boolean opening = !shopPopup.isVisible();
+        shopPopup.setVisible(opening);
+        if (opening) inputHandler.clearKeys();
     }
 }

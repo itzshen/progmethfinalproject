@@ -15,7 +15,7 @@ import java.util.Map;
 
 public class GameRenderer {
 
-    private static final double TILE_SIZE = 50.0;
+    private static final double TILE_SIZE = GameConstants.TILE_SIZE;
     private final Map<String, Image> imageCache = new HashMap<>();
 
     public GameRenderer() {
