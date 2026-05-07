@@ -36,7 +36,7 @@ public class GridSystem {
         return x >= 0 && x < width && y >= 0 && y < height;
     }
 
-    public Machine getMachine(int x, int y) {
+    public synchronized Machine getMachine(int x, int y) {
         if (!isInside(x, y)) {
             return null;
         }
@@ -46,7 +46,7 @@ public class GridSystem {
     /**
      * @return false if out of bounds or cell already occupied
      */
-    public boolean placeMachine(int x, int y, Machine machine) {
+    public synchronized boolean placeMachine(int x, int y, Machine machine) {
         if (!isInside(x, y)) {
             return false;
         }
@@ -58,7 +58,7 @@ public class GridSystem {
         return true;
     }
 
-    public boolean removeMachine(int x, int y) {
+    public synchronized boolean removeMachine(int x, int y) {
         if (!isInside(x, y)) {
             return false;
         }
@@ -75,7 +75,7 @@ public class GridSystem {
      * then spawn from droppers that started empty.
      */
 
-    public void tick() {
+    public synchronized void tick() {
         // 1. Snapshot the starting state
         boolean[][] hadItemAtStart = new boolean[width][height];
         for (int x = 0; x < width; x++) {
