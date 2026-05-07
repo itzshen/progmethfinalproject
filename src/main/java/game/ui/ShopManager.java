@@ -21,11 +21,13 @@ public class ShopManager {
     private final Map<MachineType, Integer> inventory = new EnumMap<>(MachineType.class);
     private MachineType activeSelection = MachineType.NONE;
 
-    // UI References passed from GameController
     private final HBox inventoryBox;
     private final Label moneyLabel;
     private final Function<MachineType, Image> imageLookup;
     private final Runnable onStateChange;
+
+    private final Map<MachineType, VBox> slotContainers = new EnumMap<>(MachineType.class);
+    private final Map<MachineType, Label> qtyLabels = new EnumMap<>(MachineType.class);
 
     public ShopManager(PlayerBank bank, HBox inventoryBox, Label moneyLabel,
                        Function<MachineType, Image> imageLookup, Runnable onStateChange) {
@@ -35,25 +37,25 @@ public class ShopManager {
         this.imageLookup = imageLookup;
         this.onStateChange = onStateChange;
 
-        // Initialize inventory counts to 0
-        for (MachineType type : MachineType.values()) {
-            if (type != MachineType.NONE) inventory.put(type, 0);
+        if (this.inventoryBox != null) {
+            this.inventoryBox.getChildren().clear(); // Clear any FXML placeholder data once
         }
+
+        for (MachineType type : MachineType.values()) {
+            if (type != MachineType.NONE) {
+                inventory.put(type, 0);
+                if (this.inventoryBox != null) {
+                    buildInventorySlot(type);
+                }
+            }
+        }
+
+        refreshUI();
     }
 
-    public PlayerBank getBank() {
-        return bank;
-    }
+    public MachineType getActiveSelection() { return activeSelection; }
+    public int getInventoryCount(MachineType type) { return inventory.getOrDefault(type, 0); }
 
-    public MachineType getActiveSelection() {
-        return activeSelection;
-    }
-
-    public int getInventoryCount(MachineType type) {
-        return inventory.getOrDefault(type, 0);
-    }
-
-    // This handles EVERY machine purchase dynamically
     public void attemptBuy(MachineType type) {
         if (type == MachineType.NONE) return;
 
@@ -72,52 +74,60 @@ public class ShopManager {
     }
 
     public void refreshUI() {
-        // Update Bank Text
         if (moneyLabel != null) {
             moneyLabel.setText(String.format("Balance: $%.0f", bank.getBalance()));
         }
 
-        // Update Bottom Hotbar
-        if (inventoryBox != null) {
-            inventoryBox.getChildren().clear();
-            for (MachineType type : MachineType.values()) {
-                if (type == MachineType.NONE) continue;
-                inventoryBox.getChildren().add(createInventorySlot(type));
+        for (MachineType type : MachineType.values()) {
+            if (type == MachineType.NONE) continue;
+
+            int qty = inventory.getOrDefault(type, 0);
+            VBox slot = slotContainers.get(type);
+            Label label = qtyLabels.get(type);
+
+            if (slot != null && label != null) {
+                label.setText("x" + qty);
+                slot.getStyleClass().removeAll("inventory-slot-empty", "inventory-slot-active");
+
+                if (qty == 0) {
+                    slot.getStyleClass().add("inventory-slot-empty");
+                }
+                if (activeSelection == type) {
+                    slot.getStyleClass().add("inventory-slot-active");
+                }
             }
         }
 
-        // Tell GameController to update hints/holograms
         if (onStateChange != null) {
             onStateChange.run();
         }
     }
 
-    private VBox createInventorySlot(MachineType type) {
-        int qty = inventory.getOrDefault(type, 0);
-
+    private void buildInventorySlot(MachineType type) {
         VBox slot = new VBox(4);
         slot.getStyleClass().add("inventory-slot");
-        if (qty == 0) slot.getStyleClass().add("inventory-slot-empty");
-        if (activeSelection == type) slot.getStyleClass().add("inventory-slot-active");
 
         ImageView icon = new ImageView(imageLookup.apply(type));
         icon.setFitWidth(40);
         icon.setFitHeight(40);
         icon.setPreserveRatio(true);
 
-        Label qtyLabel = new Label("x" + qty);
+        Label qtyLabel = new Label("x0");
         qtyLabel.setTextFill(Color.web("#ecf0f1"));
         qtyLabel.setFont(Font.font(12));
 
         slot.getChildren().addAll(icon, qtyLabel);
 
-        // Deselection logic
         slot.setOnMouseClicked(e -> {
             activeSelection = (activeSelection == type) ? MachineType.NONE : type;
             refreshUI();
         });
 
         VBox.setVgrow(icon, Priority.NEVER);
-        return slot;
+
+        slotContainers.put(type, slot);
+        qtyLabels.put(type, qtyLabel);
+
+        inventoryBox.getChildren().add(slot);
     }
 }
