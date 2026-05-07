@@ -1,12 +1,6 @@
 package game.ui;
 
-import game.logic.Conveyor;
-import game.logic.Direction;
-import game.logic.Dropper;
-import game.logic.Furnace;
-import game.logic.GridSystem;
-import game.logic.Machine;
-import game.logic.Upgrader;
+import game.logic.*;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -61,7 +55,7 @@ public class GameRenderer {
         return snap == null ? new WritableImage(w, h) : snap;
     }
 
-    public Image imageForMachineType(ShopManager.MachineType s) {
+    public Image imageForMachineType(MachineType s) {
         return switch (s) {
             case DROPPER -> imageCache.get("dropper.png");
             case CONVEYOR -> imageCache.get("conveyor.png");
@@ -135,7 +129,7 @@ public class GameRenderer {
 
     private void renderHologram(GraphicsContext gc, GridSystem logicGrid, ShopManager shopManager,
                                 double mouseWorldX, double mouseWorldY, Direction placementFacing, boolean shopVisible) {
-        if (shopVisible || shopManager.getActiveSelection() == ShopManager.MachineType.NONE) return;
+        if (shopVisible || shopManager.getActiveSelection() == MachineType.NONE) return;
 
         int gx = (int) Math.floor(mouseWorldX / TILE_SIZE);
         int gy = (int) Math.floor(mouseWorldY / TILE_SIZE);

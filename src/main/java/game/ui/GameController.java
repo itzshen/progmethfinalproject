@@ -1,13 +1,6 @@
 package game.ui;
 
-import game.logic.Conveyor;
-import game.logic.Direction;
-import game.logic.Dropper;
-import game.logic.Furnace;
-import game.logic.GridSystem;
-import game.logic.Machine;
-import game.logic.PlayerBank;
-import game.logic.Upgrader;
+import game.logic.*;
 import javafx.animation.AnimationTimer;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -193,8 +186,8 @@ public class GameController implements Initializable {
     private void handleCanvasClick(MouseEvent event) {
         if (shopPopup != null && shopPopup.isVisible()) return;
 
-        ShopManager.MachineType selection = shopManager.getActiveSelection();
-        if (selection == ShopManager.MachineType.NONE) return;
+        MachineType selection = shopManager.getActiveSelection();
+        if (selection == MachineType.NONE) return;
 
         if (shopManager.getInventoryCount(selection) <= 0) {
             shopManager.refreshUI();
@@ -216,7 +209,7 @@ public class GameController implements Initializable {
     }
 
 
-    private Machine createMachine(ShopManager.MachineType s) {
+    private Machine createMachine(MachineType s) {
         Direction face = placementFacing;
         return switch (s) {
             case DROPPER -> new Dropper(s.getCost(), face, 10.0);
@@ -236,10 +229,10 @@ public class GameController implements Initializable {
         }
     }
 
-    @FXML void buyDropper() { shopManager.attemptBuy(ShopManager.MachineType.DROPPER); }
-    @FXML void buyConveyor() { shopManager.attemptBuy(ShopManager.MachineType.CONVEYOR); }
-    @FXML void buyUpgrader() { shopManager.attemptBuy(ShopManager.MachineType.UPGRADER); }
-    @FXML void buyFurnace() { shopManager.attemptBuy(ShopManager.MachineType.FURNACE); }
+    @FXML void buyDropper() { shopManager.attemptBuy(MachineType.DROPPER); }
+    @FXML void buyConveyor() { shopManager.attemptBuy(MachineType.CONVEYOR); }
+    @FXML void buyUpgrader() { shopManager.attemptBuy(MachineType.UPGRADER); }
+    @FXML void buyFurnace() { shopManager.attemptBuy(MachineType.FURNACE); }
 
     private void updateShopHint() {
         // Safety check to ensure the UI and ShopManager are ready
@@ -248,12 +241,12 @@ public class GameController implements Initializable {
         }
 
         // Ask the ShopManager what is currently selected
-        ShopManager.MachineType currentSelection = shopManager.getActiveSelection();
+        MachineType currentSelection = shopManager.getActiveSelection();
         int qty = shopManager.getInventoryCount(currentSelection);
 
         // Update the label text
         shopHintLabel.setText(
-                currentSelection == ShopManager.MachineType.NONE
+                currentSelection == MachineType.NONE
                         ? "Pick a slot from inventory. Facing: " + placementFacing + " (R rotates)."
                         : "Selected: " + currentSelection + " (x" + qty + ") | Facing: " + placementFacing + " (R rotates)"
         );

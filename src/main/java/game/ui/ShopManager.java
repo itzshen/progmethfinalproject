@@ -1,5 +1,6 @@
 package game.ui;
 
+import game.logic.MachineType;
 import game.logic.PlayerBank;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
@@ -15,15 +16,6 @@ import java.util.Map;
 import java.util.function.Function;
 
 public class ShopManager {
-
-    // You can expand this enum to 50 machines later, and the UI will adapt automatically!
-    public enum MachineType {
-        NONE(0), DROPPER(50), CONVEYOR(10), UPGRADER(100), FURNACE(200);
-
-        private final double cost;
-        MachineType(double cost) { this.cost = cost; }
-        public double getCost() { return cost; }
-    }
 
     private final PlayerBank bank;
     private final Map<MachineType, Integer> inventory = new EnumMap<>(MachineType.class);
