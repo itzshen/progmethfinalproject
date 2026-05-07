@@ -1,5 +1,6 @@
 package game.ui;
 
+import game.Main;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
