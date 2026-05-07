@@ -14,13 +14,18 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.application.Platform;
 
 
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
+@SuppressWarnings("CallToPrintStackTrace")
 public class GameController implements Initializable {
 
     // ==========================================
@@ -60,8 +65,8 @@ public class GameController implements Initializable {
     // Game Loop & Timing
     // ==========================================
     private AnimationTimer gameLoop;
+    private ScheduledExecutorService logicThread;
     private long lastFrameNanos;
-    private long lastLogicTickNanos;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -87,6 +92,10 @@ public class GameController implements Initializable {
                 if (gameLoop != null) {
                     gameLoop.stop();
                     gameLoop = null;
+                }
+
+                if (logicThread != null && !logicThread.isShutdown()) {
+                    logicThread.shutdownNow();
                 }
             }
             if (newScene != null) {
@@ -150,8 +159,6 @@ public class GameController implements Initializable {
 
     private void startGameLoop() {
         lastFrameNanos = 0;
-        lastLogicTickNanos = 0;
-
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
@@ -169,18 +176,23 @@ public class GameController implements Initializable {
                 }
 
                 camera.applyTransformsAndClamp(gameCanvas, logicGrid.getWidth() * TILE_SIZE, logicGrid.getHeight() * TILE_SIZE);
-
-                if (lastLogicTickNanos == 0) lastLogicTickNanos = now;
-                if ((now - lastLogicTickNanos) / 1_000_000_000.0 >= LOGIC_INTERVAL_SEC) {
-                    logicGrid.tick();
-                    lastLogicTickNanos = now;
-                    shopManager.refreshUI();
-                }
-
                 renderer.render(gameCanvas, logicGrid, shopManager, mouseWorldX, mouseWorldY, placementFacing, shopPopup.isVisible());
             }
         };
         gameLoop.start();
+
+        logicThread = Executors.newSingleThreadScheduledExecutor();
+        long intervalMs = (long) (LOGIC_INTERVAL_SEC * 1000);
+
+        logicThread.scheduleAtFixedRate(() -> {
+            try {
+                logicGrid.tick();
+                Platform.runLater(() -> shopManager.refreshUI());
+            } catch (Exception e) {
+                System.err.println("Error in Logic Thread:");
+                e.printStackTrace();
+            }
+        }, intervalMs, intervalMs, TimeUnit.MILLISECONDS);
     }
 
     private void handleCanvasClick(MouseEvent event) {
