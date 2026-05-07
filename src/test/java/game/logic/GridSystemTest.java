@@ -67,10 +67,10 @@ class GridSystemTest {
         grid.tick();
         grid.tick();
         assertNull(furnace.getCurrentItem());
-        assertEquals(0, bank.getBalance()); // Item hasn't reached furnace
+        assertEquals(0, bank.getBalance(), 1e-9); // Item hasn't reached furnace
 
         grid.tick();
         assertNull(furnace.getCurrentItem());
-        assertEquals(5, bank.getBalance()); // Item reached furnace and update bank with item's value
+        assertEquals(5, bank.getBalance(), 1e-9); // Item reached furnace and update bank with item's value
     }
 }
