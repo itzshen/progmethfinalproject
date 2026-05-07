@@ -195,14 +195,7 @@ public class GameController implements Initializable {
     }
 
     private Machine createMachine(MachineType s) {
-        Direction face = placementFacing;
-        return switch (s) {
-            case DROPPER -> new Dropper(s.getCost(), face, 10.0);
-            case CONVEYOR -> new Conveyor(s.getCost(), face);
-            case UPGRADER -> new Upgrader(s.getCost(), face, 2.0);
-            case FURNACE -> new Furnace(s.getCost(), face, bank);
-            case NONE -> throw new IllegalStateException();
-        };
+        return s.create(placementFacing, bank);
     }
 
     @FXML

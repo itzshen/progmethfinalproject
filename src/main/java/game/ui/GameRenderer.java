@@ -56,13 +56,7 @@ public class GameRenderer {
     }
 
     public Image imageForMachineType(MachineType s) {
-        return switch (s) {
-            case DROPPER -> imageCache.get("dropper.png");
-            case CONVEYOR -> imageCache.get("conveyor.png");
-            case UPGRADER -> imageCache.get("upgrader.png");
-            case FURNACE -> imageCache.get("furnace.png");
-            case NONE -> imageCache.get("conveyor.png");
-        };
+        return imageCache.get(s.getImageName());
     }
 
     private Image imageForMachine(Machine m) {
