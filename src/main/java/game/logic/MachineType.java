@@ -12,7 +12,7 @@ public enum MachineType {
         }
     },
 
-    CONVEYOR(10, "conveyor.png", MachineCategory.TRANSPORT) {
+    CONVEYOR(10, "conveyor.png", MachineCategory.TRANSPORT, "Conveyor") {
         @Override
         public Machine create(Direction face, PlayerBank bank) {
             return new Conveyor(getCost(), face);
@@ -20,7 +20,7 @@ public enum MachineType {
     },
 
     // Dropper
-    DROPPER(50, "dropper.png", MachineCategory.PRODUCTION) {
+    DROPPER(50, "dropper.png", MachineCategory.PRODUCTION, "Dropper") {
         @Override
         public Machine create(Direction face, PlayerBank bank) {
             return new Dropper(getCost(), face, 10.0); // 10.0 drop rate
@@ -28,13 +28,13 @@ public enum MachineType {
     },
 
     // Upgrader
-    UPGRADER(100, "upgrader.png", MachineCategory.UPGRADES) {
+    UPGRADER(100, "upgrader.png", MachineCategory.UPGRADES, "Upgrades") {
         @Override
         public Machine create(Direction face, PlayerBank bank) {
             return new Upgrader(getCost(), face, 2.0); // 2.0 upgrade multiplier
         }
     },
-    TEST(19, "upgrader.png", MachineCategory.UPGRADES) {
+    TEST(19, "tdsggdsgsdgdsg.png", MachineCategory.UPGRADES, "TEST") {
         @Override
         public Machine create(Direction face, PlayerBank bank) {
             return new Upgrader(getCost(), face, 1231);
@@ -42,7 +42,7 @@ public enum MachineType {
     },
 
     // Furnace
-    FURNACE(200, "furnace.png", MachineCategory.PROCESSING) {
+    FURNACE(200, "furnace.png", MachineCategory.PROCESSING, "Furnace") {
         @Override
         public Machine create(Direction face, PlayerBank bank) {
             return new Furnace(getCost(), face, bank); // Furnace needs the bank
@@ -52,11 +52,21 @@ public enum MachineType {
     private final double cost;
     private final String imageName;
     private final MachineCategory category;
+    private final String fallBackText;
 
     MachineType(double cost, String imageName, MachineCategory category) {
         this.cost = cost;
         this.imageName = imageName;
         this.category = category;
+        this.fallBackText = null;
+    }
+
+    // Add fallback text for placeholder image
+    MachineType(double cost, String imageName, MachineCategory category, String fallBackText) {
+        this.cost = cost;
+        this.imageName = imageName;
+        this.category = category;
+        this.fallBackText = fallBackText;
     }
 
     public double getCost() {
@@ -69,6 +79,10 @@ public enum MachineType {
 
     public MachineCategory getCategory() {
         return category;
+    }
+
+    public String getFallBackText() {
+        return fallBackText;
     }
 
     public abstract Machine create(Direction face, PlayerBank bank);
