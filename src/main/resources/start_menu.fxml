@@ -23,7 +23,6 @@
     <VBox fx:id="menuBox"
           alignment="BOTTOM_CENTER"
           spacing="16"
-          mouseTransparent="false"
           style="-fx-padding: 0 0 110 0;">
 
         <Button fx:id="playButton"
