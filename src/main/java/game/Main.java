@@ -11,8 +11,8 @@ import java.util.Objects;
 
 public class Main extends Application {
 
-    public static final int SCENE_WIDTH = 1024;
-    public static final int SCENE_HEIGHT = 768;
+    public static final int SCENE_WIDTH = 1666;
+    public static final int SCENE_HEIGHT = 930;
 
     @Override
     public void start(Stage primaryStage) throws IOException {

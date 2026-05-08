@@ -1,24 +1,67 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.Pane?>
 
 <StackPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="game.ui.StartMenuController"
-           style="-fx-background-color: #2b2b2b;">
-    <children>
-        <ImageView fx:id="backgroundImageView"
-                   fitWidth="1024.0" fitHeight="768.0"
-                   preserveRatio="false" pickOnBounds="true" opacity="0.85"/>
-        <VBox alignment="CENTER" spacing="20.0">
-            <Label text="Factory Tycoon"
-                   style="-fx-text-fill: white; -fx-font-size: 48px; -fx-font-weight: bold;"/>
-            <Button text="Play" onAction="#startGame" mnemonicParsing="false"
-                    style="-fx-font-size: 18px; -fx-padding: 12 30 12 30; -fx-background-radius: 10; -fx-background-color: #3b82f6; -fx-text-fill: white;"/>
-        </VBox>
-    </children>
-</StackPane>
+           style="-fx-background-color: #0a0c0f;">
 
+    <Pane fx:id="backgroundPane" />
+
+    <Pane mouseTransparent="true"
+          style="-fx-background-color: linear-gradient(
+              from 0% 0% to 0% 100%,
+              rgba(0,0,0,0.05) 0%,
+              rgba(0,0,0,0.15) 40%,
+              rgba(0,0,0,0.72) 75%,
+              rgba(0,0,0,0.88) 100%
+          );"/>
+
+    <VBox fx:id="menuBox"
+          alignment="BOTTOM_CENTER"
+          spacing="16"
+          mouseTransparent="false"
+          style="-fx-padding: 0 0 110 0;">
+
+        <Button fx:id="playButton"
+                text="PLAY GAME"
+                mnemonicParsing="false"
+                onAction="#startGame"
+                prefWidth="300" prefHeight="62"
+                style="
+                    -fx-background-color: #e8a020;
+                    -fx-text-fill: #0a0c0f;
+                    -fx-font-family: 'Courier New';
+                    -fx-font-size: 18px;
+                    -fx-font-weight: bold;
+                    -fx-letter-spacing: 3;
+                    -fx-background-radius: 2;
+                    -fx-cursor: hand;
+                    -fx-effect: dropshadow(gaussian, rgba(232,160,32,0.55), 18, 0.3, 0, 0);
+                "/>
+
+        <Button fx:id="quitButton"
+                text="QUIT GAME"
+                mnemonicParsing="false"
+                onAction="#quitGame"
+                prefWidth="300" prefHeight="62"
+                style="
+                    -fx-background-color: transparent;
+                    -fx-text-fill: #a0a8b0;
+                    -fx-font-family: 'Courier New';
+                    -fx-font-size: 18px;
+                    -fx-font-weight: bold;
+                    -fx-letter-spacing: 3;
+                    -fx-background-radius: 2;
+                    -fx-border-color: #3a4450;
+                    -fx-border-width: 1.5;
+                    -fx-border-radius: 2;
+                    -fx-cursor: hand;
+                "/>
+
+    </VBox>
+
+</StackPane>
