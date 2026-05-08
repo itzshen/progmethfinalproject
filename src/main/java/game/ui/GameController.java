@@ -6,6 +6,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.input.KeyCode;
 
@@ -25,11 +26,13 @@ public class GameController implements Initializable {
     // ==========================================
     @FXML private Canvas  gameCanvas;
     @FXML private VBox    shopPopup;
-    @FXML private VBox    inventoryBar;       // replaces HBox inventoryBox
-    @FXML private TabPane inventoryTabPane;   // inside inventoryBar
+    @FXML private HBox    inventoryBar;
+    @FXML private TabPane inventoryTabPane;
     @FXML private Label   moneyLabel;
     @FXML private Label   shopHintLabel;
     @FXML private TabPane shopTabPane;
+    @FXML private Button  buildModeButton;
+    @FXML private Button  removeModeButton;
 
     // ==========================================
     // Core Systems
@@ -84,6 +87,7 @@ public class GameController implements Initializable {
                 shopManager::getActiveSelection,
                 shopManager::getInventoryCount,
                 shopManager::consumeFromInventory,
+                shopManager::returnToInventory,
                 shopManager::refreshUI,
                 text -> { if (shopHintLabel != null) shopHintLabel.setText(text); }
         );
@@ -93,6 +97,8 @@ public class GameController implements Initializable {
         inputHandler = new InputHandler(
                 this::toggleShop,
                 this::toggleInventory,
+                this::setBuildMode,
+                this::setRemoveMode,
                 placementManager::cyclePlacementFacing,
                 camera::applyZoom,
                 () -> shopPopup != null && shopPopup.isVisible(),
@@ -165,7 +171,7 @@ public class GameController implements Initializable {
     @FXML
     void toggleShop() {
         boolean opening = !shopPopup.isVisible();
-        if (opening) setInventoryVisible(false); // close inventory first
+        if (opening) setInventoryVisible(false);
         setShopVisible(opening);
         inputHandler.clearKeys();
     }
@@ -173,9 +179,33 @@ public class GameController implements Initializable {
     @FXML
     void toggleInventory() {
         boolean opening = !inventoryBar.isVisible();
-        if (opening) setShopVisible(false); // close shop first
+        if (opening) setShopVisible(false);
         setInventoryVisible(opening);
         inputHandler.clearKeys();
+    }
+
+    // ==========================================
+    // Placement Mode Actions
+    // ==========================================
+
+    @FXML
+    void setBuildMode() {
+        placementManager.setMode(PlacementMode.BUILD);
+        updateModeButtons(PlacementMode.BUILD);
+    }
+
+    @FXML
+    void setRemoveMode() {
+        placementManager.setMode(PlacementMode.REMOVE);
+        updateModeButtons(PlacementMode.REMOVE);
+    }
+
+    private void updateModeButtons(PlacementMode mode) {
+        if (buildModeButton  != null) buildModeButton.getStyleClass().removeAll("mode-btn-active");
+        if (removeModeButton != null) removeModeButton.getStyleClass().removeAll("mode-btn-active");
+
+        if (mode == PlacementMode.BUILD  && buildModeButton  != null) buildModeButton.getStyleClass().add("mode-btn-active");
+        if (mode == PlacementMode.REMOVE && removeModeButton != null) removeModeButton.getStyleClass().add("mode-btn-active");
     }
 
     // ==========================================

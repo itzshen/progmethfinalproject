@@ -8,15 +8,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-/**
- * Owns all machine-placement state and logic:
- *   - Placement facing direction and cycling
- *   - Mouse world position tracking
- *   - Canvas click → place machine on grid
- *   - Shop hint text (depends on facing, so it lives here)
- * Talks to ShopManager and GridSystem exclusively through
- * constructor-injected callbacks to stay loosely coupled.
- */
 public class PlacementManager {
 
     // ==========================================
@@ -27,7 +18,8 @@ public class PlacementManager {
     // ==========================================
     // Placement State
     // ==========================================
-    private Direction placementFacing = Direction.RIGHT;
+    private Direction    placementFacing = Direction.RIGHT;
+    private PlacementMode placementMode  = PlacementMode.BUILD;
     private double mouseWorldX;
     private double mouseWorldY;
 
@@ -40,12 +32,13 @@ public class PlacementManager {
     // ==========================================
     // Callbacks into ShopManager / UI
     // ==========================================
-    private final BooleanSupplier          isShopVisible;
-    private final Supplier<MachineType>    getActiveSelection;
+    private final BooleanSupplier                isShopVisible;
+    private final Supplier<MachineType>          getActiveSelection;
     private final Function<MachineType, Integer> getInventoryCount;
-    private final Consumer<MachineType>    consumeFromInventory;
-    private final Runnable                 refreshUI;
-    private final Consumer<String>         onHintText; // writes to shopHintLabel
+    private final Consumer<MachineType>          consumeFromInventory;
+    private final Consumer<MachineType>          returnToInventory;
+    private final Runnable                       refreshUI;
+    private final Consumer<String>               onHintText;
 
     // ==========================================
     // Constructor
@@ -56,24 +49,35 @@ public class PlacementManager {
                             Supplier<MachineType> getActiveSelection,
                             Function<MachineType, Integer> getInventoryCount,
                             Consumer<MachineType> consumeFromInventory,
+                            Consumer<MachineType> returnToInventory,
                             Runnable refreshUI,
                             Consumer<String> onHintText) {
-        this.logicGrid           = logicGrid;
-        this.bank                = bank;
-        this.isShopVisible       = isShopVisible;
-        this.getActiveSelection  = getActiveSelection;
-        this.getInventoryCount   = getInventoryCount;
+        this.logicGrid            = logicGrid;
+        this.bank                 = bank;
+        this.isShopVisible        = isShopVisible;
+        this.getActiveSelection   = getActiveSelection;
+        this.getInventoryCount    = getInventoryCount;
         this.consumeFromInventory = consumeFromInventory;
-        this.refreshUI           = refreshUI;
-        this.onHintText          = onHintText;
+        this.returnToInventory    = returnToInventory;
+        this.refreshUI            = refreshUI;
+        this.onHintText           = onHintText;
     }
 
     // ==========================================
     // Accessors
     // ==========================================
-    public Direction getPlacementFacing() { return placementFacing; }
-    public double    getMouseWorldX()     { return mouseWorldX; }
-    public double    getMouseWorldY()     { return mouseWorldY; }
+    public Direction     getPlacementFacing() { return placementFacing; }
+    public PlacementMode getPlacementMode()   { return placementMode;   }
+    public double        getMouseWorldX()     { return mouseWorldX;     }
+    public double        getMouseWorldY()     { return mouseWorldY;     }
+
+    // ==========================================
+    // Mode Switching
+    // ==========================================
+    public void setMode(PlacementMode mode) {
+        this.placementMode = mode;
+        updateHint();
+    }
 
     // ==========================================
     // Facing
@@ -91,10 +95,14 @@ public class PlacementManager {
     // ==========================================
     // Hint Text
     // ==========================================
-
-    /** Recomputes and pushes the hint string to the UI label. */
     public void updateHint() {
         if (onHintText == null) return;
+
+        if (placementMode == PlacementMode.REMOVE) {
+            onHintText.accept("REMOVE mode — click a machine to remove it.");
+            return;
+        }
+
         MachineType selection = getActiveSelection.get();
         int qty = getInventoryCount.apply(selection);
         onHintText.accept(
@@ -110,21 +118,14 @@ public class PlacementManager {
     public void handleCanvasClick(MouseEvent event) {
         if (isShopVisible.getAsBoolean()) return;
 
-        MachineType selection = getActiveSelection.get();
-        if (selection == MachineType.NONE) return;
-
-        if (getInventoryCount.apply(selection) <= 0) {
-            refreshUI.run();
-            return;
-        }
-
         int gx = (int) Math.floor(event.getX() / TILE_SIZE);
         int gy = (int) Math.floor(event.getY() / TILE_SIZE);
         if (!logicGrid.isInside(gx, gy)) return;
 
-        Machine toPlace = createMachine(selection);
-        if (logicGrid.placeMachine(gx, gy, toPlace)) {
-            consumeFromInventory.accept(selection);
+        if (placementMode == PlacementMode.REMOVE) {
+            handleRemove(gx, gy);
+        } else {
+            handleBuild(gx, gy);
         }
     }
 
@@ -135,8 +136,36 @@ public class PlacementManager {
     }
 
     // ==========================================
-    // Private
+    // Private helpers
     // ==========================================
+    private void handleBuild(int gx, int gy) {
+        MachineType selection = getActiveSelection.get();
+        if (selection == MachineType.NONE) return;
+        if (getInventoryCount.apply(selection) <= 0) {
+            refreshUI.run();
+            return;
+        }
+
+        Machine toPlace = createMachine(selection);
+        if (logicGrid.placeMachine(gx, gy, toPlace)) {
+            consumeFromInventory.accept(selection);
+        }
+    }
+
+    private void handleRemove(int gx, int gy) {
+        Machine existing = logicGrid.getMachine(gx, gy);
+        if (existing == null) return;
+
+        MachineType type = existing.getType();
+        if (logicGrid.removeMachine(gx, gy)) {
+            // Return machine to inventory (item it was holding is discarded)
+            if (type != MachineType.NONE) {
+                returnToInventory.accept(type);
+            }
+            refreshUI.run();
+        }
+    }
+
     private Machine createMachine(MachineType type) {
         return type.create(placementFacing, bank);
     }

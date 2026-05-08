@@ -32,7 +32,7 @@ public class ShopManager {
     private final Function<MachineType, Image> imageLookup;
     private final Runnable onStateChange;
 
-    private InventoryUIBuilder inventoryUI; // wired after FXML is ready
+    private InventoryUIBuilder inventoryUI;
 
     // ==========================================
     // Constructor
@@ -46,14 +46,13 @@ public class ShopManager {
         this.imageLookup   = imageLookup;
         this.onStateChange = onStateChange;
 
-        // Initialise all counts to 0 but don't build any UI tiles yet
         for (MachineType type : MachineType.values()) {
             if (type != MachineType.NONE) inventory.put(type, 0);
         }
     }
 
     // ==========================================
-    // Inventory bar wiring (called from GameController after FXML load)
+    // Inventory bar wiring
     // ==========================================
     public void initInventoryUI(TabPane inventoryTabPane) {
         inventoryUI = new InventoryUIBuilder(
@@ -72,7 +71,6 @@ public class ShopManager {
         if (bank.trySpend(type.getCost())) {
             inventory.put(type, inventory.get(type) + 1);
 
-            // First-ever purchase — reveal the tile in the inventory bar
             if (!everBought.contains(type)) {
                 everBought.add(type);
                 if (inventoryUI != null) inventoryUI.ensureVisible(type);
@@ -88,6 +86,23 @@ public class ShopManager {
             inventory.put(type, current - 1);
             refreshUI();
         }
+    }
+
+    /**
+     * Returns one unit of {@code type} to the player's inventory.
+     * Called when a placed machine is removed from the grid.
+     * If this is somehow the first time the type is seen, its tile is also revealed.
+     */
+    public void returnToInventory(MachineType type) {
+        if (type == MachineType.NONE) return;
+        inventory.merge(type, 1, Integer::sum);
+
+        if (!everBought.contains(type)) {
+            everBought.add(type);
+            if (inventoryUI != null) inventoryUI.ensureVisible(type);
+        }
+
+        refreshUI();
     }
 
     // ==========================================

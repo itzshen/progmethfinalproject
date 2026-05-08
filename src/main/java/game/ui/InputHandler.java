@@ -22,6 +22,8 @@ public class InputHandler {
     // ==========================================
     private final Runnable       onToggleShop;
     private final Runnable       onToggleInventory;
+    private final Runnable       onBuildMode;
+    private final Runnable       onRemoveMode;
     private final Runnable       onCycleFacing;
     private final DoubleConsumer onZoom;
     private final BooleanSupplier isShopVisible;
@@ -32,12 +34,16 @@ public class InputHandler {
     // ==========================================
     public InputHandler(Runnable onToggleShop,
                         Runnable onToggleInventory,
+                        Runnable onBuildMode,
+                        Runnable onRemoveMode,
                         Runnable onCycleFacing,
                         DoubleConsumer onZoom,
                         BooleanSupplier isShopVisible,
                         BooleanSupplier isInventoryVisible) {
         this.onToggleShop       = onToggleShop;
         this.onToggleInventory  = onToggleInventory;
+        this.onBuildMode        = onBuildMode;
+        this.onRemoveMode       = onRemoveMode;
         this.onCycleFacing      = onCycleFacing;
         this.onZoom             = onZoom;
         this.isShopVisible      = isShopVisible;
@@ -73,15 +79,16 @@ public class InputHandler {
         KeyCode code = event.getCode();
         boolean anyPanelOpen = isShopVisible.getAsBoolean() || isInventoryVisible.getAsBoolean();
 
-        // Toggle keys always fire regardless of panel state
-        if (code == KeyCode.E) { onToggleShop.run();      return; }
-        if (code == KeyCode.B) { onToggleInventory.run(); return; }
+        // These always fire regardless of panel state
+        if (code == KeyCode.E)      { onToggleShop.run();      return; }
+        if (code == KeyCode.B)      { onToggleInventory.run(); return; }
+        if (code == KeyCode.DIGIT1) { onBuildMode.run();       return; }
+        if (code == KeyCode.DIGIT2) { onRemoveMode.run();      return; }
 
-        // R only works when no panel is open
-        if (code == KeyCode.R && !anyPanelOpen) { onCycleFacing.run(); return; }
-
-        // Movement keys only tracked when no panel is blocking
-        if (!anyPanelOpen) activeKeys.add(code);
+        // R and movement only when no panel is blocking
+        if (anyPanelOpen) return;
+        if (code == KeyCode.R) { onCycleFacing.run(); return; }
+        activeKeys.add(code);
     }
 
     private void handleKeyReleased(KeyEvent event) {

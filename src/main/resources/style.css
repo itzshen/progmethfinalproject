@@ -14,14 +14,6 @@
 .tab-pane .tab .tab-label { -fx-text-fill: #ecf0f1; -fx-font-weight: bold; }
 .tab-pane .tab-content-area { -fx-background-color: #34495e; -fx-padding: 15; }
 
-/* ── Old inventory slot styles (kept for any leftover references) */
-.inventory-slot {
-    -fx-background-color: #34495e; -fx-border-color: #2c3e50; -fx-border-width: 2;
-    -fx-background-radius: 5; -fx-border-radius: 5; -fx-cursor: hand; -fx-padding: 5;
-}
-.inventory-slot-active { -fx-border-color: #f1c40f; }
-.inventory-slot-empty  { -fx-opacity: 0.5; }
-
 /* ── Inventory bar tab pane chrome ────────────────────────────── */
 #inventoryTabPane .tab-header-area .tab-header-background {
     -fx-background-color: #0f1421;
@@ -60,15 +52,46 @@
     -fx-background-color: #253d54;
     -fx-border-color: #4a7aa0;
 }
-
-/* Active/selected tile — gold border to match existing shop style */
 .inv-tile.inv-tile-active {
     -fx-background-color: #1a3a5c;
     -fx-border-color: #f1c40f;
     -fx-border-width: 2;
 }
-
-/* Zero-quantity tile — dimmed but still visible */
 .inv-tile.inv-tile-empty {
     -fx-opacity: 0.55;
+}
+
+/* ── Placement mode buttons ───────────────────────────────────── */
+.mode-btn {
+    -fx-background-color: #1e2d3d;
+    -fx-text-fill: #8eacc8;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-alignment: center;
+    -fx-background-radius: 5;
+    -fx-border-color: #2a4a6a;
+    -fx-border-radius: 5;
+    -fx-border-width: 1;
+    -fx-cursor: hand;
+    -fx-padding: 6 4 6 4;
+}
+.mode-btn:hover {
+    -fx-background-color: #253d54;
+    -fx-border-color: #4a7aa0;
+    -fx-text-fill: #dce6f0;
+}
+
+/* Active mode button — green tint for Build, red tint for Remove */
+.mode-btn.mode-btn-active {
+    -fx-background-color: #1a3a1a;
+    -fx-border-color: #27ae60;
+    -fx-border-width: 2;
+    -fx-text-fill: #2ecc71;
+}
+
+#removeModeButton.mode-btn-active {
+    -fx-background-color: #3a1a1a;
+    -fx-border-color: #c0392b;
+    -fx-border-width: 2;
+    -fx-text-fill: #e74c3c;
 }
