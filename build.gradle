@@ -16,6 +16,16 @@ javafx {
     modules = [ 'javafx.controls', 'javafx.fxml', 'javafx.graphics', 'javafx.media' ]
 }
 dependencies {
+    implementation 'org.openjfx:javafx-controls:17.0.10:win'
+    implementation 'org.openjfx:javafx-controls:17.0.10:mac'
+    implementation 'org.openjfx:javafx-fxml:17.0.10:win'
+    implementation 'org.openjfx:javafx-fxml:17.0.10:mac'
+    implementation 'org.openjfx:javafx-graphics:17.0.10:win'
+    implementation 'org.openjfx:javafx-graphics:17.0.10:mac'
+    implementation 'org.openjfx:javafx-media:17.0.10:win'
+    implementation 'org.openjfx:javafx-media:17.0.10:mac'
+
+
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }
