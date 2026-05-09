@@ -5,7 +5,7 @@ import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
 
 public class CameraManager {
-    private static final double ZOOM_MIN = 0.5;
+    private static final double ZOOM_MIN = 0.8;
     private static final double ZOOM_MAX = 2.0;
 
     private double x = 0.0;
