@@ -1,5 +1,9 @@
 package game.logic;
 
+/**
+ * Defines the available machine blueprints, including their cost, UI metadata,
+ * category, and factory logic for creating placed machines.
+ */
 public enum MachineType {
     /* Dynamically add into machine list
     To add new machine just copy and change constructor and use correct image path
@@ -126,6 +130,13 @@ public enum MachineType {
     private final MachineCategory category;
     private final String fallBackText;
 
+    /**
+     * Creates a machine type without fallback display text.
+     *
+     * @param cost the purchase cost
+     * @param imageName the image asset file name
+     * @param category the shop category
+     */
     MachineType(double cost, String imageName, MachineCategory category) {
         this.cost = cost;
         this.imageName = imageName;
@@ -133,7 +144,14 @@ public enum MachineType {
         this.fallBackText = null;
     }
 
-    // Add fallback text for placeholder image
+    /**
+     * Creates a machine type with fallback display text.
+     *
+     * @param cost the purchase cost
+     * @param imageName the image asset file name
+     * @param category the shop category
+     * @param fallBackText text used when the image is unavailable
+     */
     MachineType(double cost, String imageName, MachineCategory category, String fallBackText) {
         this.cost = cost;
         this.imageName = imageName;
@@ -141,21 +159,40 @@ public enum MachineType {
         this.fallBackText = fallBackText;
     }
 
+    /**
+     * @return the purchase cost
+     */
     public double getCost() {
         return cost;
     }
 
+    /**
+     * @return the image asset file name
+     */
     public String getImageName() {
         return imageName;
     }
 
+    /**
+     * @return the shop category
+     */
     public MachineCategory getCategory() {
         return category;
     }
 
+    /**
+     * @return fallback display text for missing images
+     */
     public String getFallBackText() {
         return fallBackText;
     }
 
+    /**
+     * Creates a machine instance for this type.
+     *
+     * @param face the placed machine's facing direction
+     * @param bank the player bank used by machines that need it
+     * @return a new machine instance
+     */
     public abstract Machine create(Direction face, PlayerBank bank);
 }

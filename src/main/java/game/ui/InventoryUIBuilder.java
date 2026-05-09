@@ -14,15 +14,13 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 
 import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
  * Builds and manages the tabbed bottom inventory bar.
- * One Tab per MachineCategory; tiles are added on first purchase only.
+ * One Tab per MachineCategory; tiles are added on the first purchase only.
  */
 public class InventoryUIBuilder {
 
@@ -43,6 +41,14 @@ public class InventoryUIBuilder {
     // ==========================================
     // Constructor
     // ==========================================
+
+    /**
+     * Initializes the inventory UI builder and constructs the category tabs.
+     *
+     * @param tabPane The base TabPane to populate with inventory categories.
+     * @param imageFor Function to retrieve the graphical asset for a specific machine type.
+     * @param onSelect Callback executed when the player clicks a machine tile to select it.
+     */
     public InventoryUIBuilder(TabPane tabPane,
                               Function<MachineType, Image> imageFor,
                               Consumer<MachineType> onSelect) {
@@ -98,6 +104,11 @@ public class InventoryUIBuilder {
     // Private builders
     // ==========================================
 
+    /**
+     * Generates the scrollable UI tabs for each available machine category.
+     *
+     * @param tabPane The parent TabPane to attach the newly created tabs to.
+     */
     private void buildTabs(TabPane tabPane) {
         tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
 
@@ -121,6 +132,12 @@ public class InventoryUIBuilder {
         }
     }
 
+    /**
+     * Constructs a clickable visual tile for a machine, including its image, name, and quantity badge.
+     *
+     * @param type The specific machine type to represent on this tile.
+     * @return A fully styled StackPane representing the interactive inventory slot.
+     */
     private StackPane buildTile(MachineType type) {
         // Image
         ImageView iv = new ImageView();

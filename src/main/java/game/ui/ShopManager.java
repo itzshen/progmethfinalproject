@@ -12,6 +12,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+/**
+ * Manages the player's economy and inventory state.
+ * Acts as the bridge between the logical PlayerBank and the visual Shop/Inventory UI,
+ * handling purchases, inventory consumption, and UI synchronization.
+ */
 public class ShopManager {
 
     // ==========================================
@@ -37,6 +42,15 @@ public class ShopManager {
     // ==========================================
     // Constructor
     // ==========================================
+
+    /**
+     * Initializes the shop manager with references to the player's bank and UI callbacks.
+     *
+     * @param bank The logical bank handling the player's currency.
+     * @param moneyLabel The UI label displaying the current balance.
+     * @param imageLookup Function to retrieve images for inventory tiles.
+     * @param onStateChange Callback triggered whenever inventory or balance updates occur.
+     */
     public ShopManager(PlayerBank bank,
                        Label moneyLabel,
                        Function<MachineType, Image> imageLookup,
@@ -54,6 +68,12 @@ public class ShopManager {
     // ==========================================
     // Inventory bar wiring
     // ==========================================
+
+    /**
+     * Links the visual inventory bar to this manager's internal state.
+     *
+     * @param inventoryTabPane The TabPane container for the inventory UI.
+     */
     public void initInventoryUI(TabPane inventoryTabPane) {
         inventoryUI = new InventoryUIBuilder(
                 inventoryTabPane,
@@ -65,6 +85,13 @@ public class ShopManager {
     // ==========================================
     // Shop actions
     // ==========================================
+
+    /**
+     * Attempts to purchase one unit of the specified machine.
+     * Deducts currency and adds to inventory if funds are sufficient.
+     *
+     * @param type The machine type to purchase.
+     */
     public void attemptBuy(MachineType type) {
         if (type == MachineType.NONE) return;
 
@@ -80,6 +107,12 @@ public class ShopManager {
         }
     }
 
+    /**
+     * Deducts one unit of the specified machine type from the player's inventory.
+     * Called when a machine is successfully placed on the grid.
+     *
+     * @param type The machine type to consume.
+     */
     public void consumeFromInventory(MachineType type) {
         int current = inventory.getOrDefault(type, 0);
         if (current > 0) {
@@ -108,12 +141,27 @@ public class ShopManager {
     // ==========================================
     // Selection
     // ==========================================
+
+    /**
+     * @return The machine type currently selected by the player for placement.
+     */
     public MachineType getActiveSelection() { return activeSelection; }
 
+    /**
+     * Checks how many units of a specific machine type the player currently owns.
+     *
+     * @param type The machine type to query.
+     * @return The quantity available in the inventory.
+     */
     public int getInventoryCount(MachineType type) {
         return inventory.getOrDefault(type, 0);
     }
 
+    /**
+     * Toggles the active placement selection when an inventory tile is clicked.
+     *
+     * @param type The machine type corresponding to the clicked tile.
+     */
     private void handleTileClick(MachineType type) {
         activeSelection = (activeSelection == type) ? MachineType.NONE : type;
         refreshUI();
@@ -122,6 +170,11 @@ public class ShopManager {
     // ==========================================
     // UI refresh
     // ==========================================
+
+    /**
+     * Forces an immediate visual update of the bank balance label and inventory slot quantities.
+     * Triggers the external state change callback to update dependent UI elements.
+     */
     public void refreshUI() {
         if (moneyLabel != null) {
             moneyLabel.setText(String.format("Balance: $%.0f", bank.getBalance()));

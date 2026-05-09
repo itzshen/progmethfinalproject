@@ -15,13 +15,12 @@ import javafx.scene.input.KeyCode;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+/**
+ * Main JavaFX controller that wires together the grid, shop, input, placement,
+ * rendering, audio, and game-loop systems.
+ */
 @SuppressWarnings("CallToPrintStackTrace")
 public class GameController implements Initializable {
-
-    // ==========================================
-    // Constants
-    // ==========================================
-    private static final double TILE_SIZE = GameConstants.TILE_SIZE;
 
     // ==========================================
     // FXML UI Components
@@ -61,6 +60,12 @@ public class GameController implements Initializable {
     // ==========================================
     // Initialization
     // ==========================================
+    /**
+     * Initializes UI managers, input handling, game loops, canvas events, and music.
+     *
+     * @param location the FXML location
+     * @param resources localized resources
+     */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         previousBalance = bank.getBalance();
@@ -77,6 +82,9 @@ public class GameController implements Initializable {
     // Wiring
     // ==========================================
 
+    /**
+     * Initializes the shop and its UI components.
+     */
     private void initShop() {
         shopManager = new ShopManager(
                 bank,
@@ -89,6 +97,9 @@ public class GameController implements Initializable {
         shopManager.refreshUI();
     }
 
+    /**
+     * Initializes the placement manager and its UI components.
+     */
     private void initPlacement() {
         placementManager = new PlacementManager(
                 logicGrid,
@@ -105,6 +116,9 @@ public class GameController implements Initializable {
         );
     }
 
+    /**
+     * Initializes the input handler and its key bindings.
+     */
     private void initInput() {
         inputHandler = new InputHandler(
                 this::toggleShop,
@@ -118,6 +132,9 @@ public class GameController implements Initializable {
         );
     }
 
+    /**
+     * Initializes the game loop and its callbacks.
+     */
     private void initGameLoop() {
         gameLoopManager = new GameLoopManager(
                 this::onRenderFrame,
@@ -125,11 +142,17 @@ public class GameController implements Initializable {
         );
     }
 
+    /**
+     * Binds the canvas to the game loop and input handler.
+     */
     private void bindCanvas() {
         gameCanvas.setOnMouseClicked(placementManager::handleCanvasClick);
         gameCanvas.setOnMouseMoved(placementManager::handleCanvasMouseMove);
     }
 
+    /**
+     * Binds the scene lifecycle to the input handler and game loop.
+     */
     private void bindSceneLifecycle() {
         gameCanvas.sceneProperty().addListener((obs, oldScene, newScene) -> {
             if (oldScene != null) {
@@ -149,6 +172,13 @@ public class GameController implements Initializable {
     // Game Loop Callbacks
     // ==========================================
 
+    /**
+     * Executes the core rendering logic for a single frame.
+     * Calculates camera panning based on keyboard input, clamps the camera within
+     * the defined world boundaries, and triggers the main graphics rendering sequence.
+     *
+     * @param dtSec The elapsed time in seconds since the last frame, used for smooth movement scaling.
+     */
     private void onRenderFrame(double dtSec) {
         if (dtSec > 0) {
             double pan = GameLoopManager.PAN_SPEED_PX_PER_SEC * dtSec;
@@ -175,6 +205,9 @@ public class GameController implements Initializable {
         );
     }
 
+    /**
+     * Executes the core logic for a single tick.
+     */
     private void onLogicTick() {
         logicGrid.tick();
 
@@ -191,6 +224,9 @@ public class GameController implements Initializable {
     // Panel Toggles
     // ==========================================
 
+    /**
+     * Toggles the shop and inventory panels.
+     */
     @FXML
     void toggleShop() {
         boolean opening = !shopPopup.isVisible();
@@ -199,6 +235,9 @@ public class GameController implements Initializable {
         inputHandler.clearKeys();
     }
 
+    /**
+     * Toggles the inventory panel.
+     */
     @FXML
     void toggleInventory() {
         boolean opening = !inventoryBar.isVisible();
@@ -211,18 +250,28 @@ public class GameController implements Initializable {
     // Placement Mode Actions
     // ==========================================
 
+    /**
+     * Sets the placement mode to BUILD.
+     */
     @FXML
     void setBuildMode() {
         placementManager.setMode(PlacementMode.BUILD);
         updateModeButtons(PlacementMode.BUILD);
     }
 
+    /**
+     * Sets the placement mode to REMOVE.
+     */
     @FXML
     void setRemoveMode() {
         placementManager.setMode(PlacementMode.REMOVE);
         updateModeButtons(PlacementMode.REMOVE);
     }
 
+    /**
+     * Updates the active mode button style classes.
+     * @param mode
+     */
     private void updateModeButtons(PlacementMode mode) {
         if (buildModeButton  != null) buildModeButton.getStyleClass().removeAll("mode-btn-active");
         if (removeModeButton != null) removeModeButton.getStyleClass().removeAll("mode-btn-active");
@@ -234,11 +283,19 @@ public class GameController implements Initializable {
     // Visibility helpers
     // ==========================================
 
+    /**
+     * Sets the shop and inventory panels' visibility.
+     * @param visible
+     */
     private void setShopVisible(boolean visible) {
         shopPopup.setVisible(visible);
         shopPopup.setManaged(visible);
     }
 
+    /**
+     * Sets the inventory panel's visibility.
+     * @param visible
+     */
     private void setInventoryVisible(boolean visible) {
         inventoryBar.setVisible(visible);
         inventoryBar.setManaged(visible);

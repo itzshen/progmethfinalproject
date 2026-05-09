@@ -39,6 +39,9 @@ public class SoundManager {
     // ==========================================
     // Constructor
     // ==========================================
+    /**
+     * Loads available sound effects and background music.
+     */
     public SoundManager() {
         preloadSfx();
         loadMusic();
@@ -48,6 +51,9 @@ public class SoundManager {
     // Preloading
     // ==========================================
 
+    /**
+     * Loads all sound effects into memory.
+     */
     private void preloadSfx() {
         for (SoundEffect effect : SoundEffect.values()) {
             String path = SFX_PATH + effect.getFileName();
@@ -66,6 +72,9 @@ public class SoundManager {
         }
     }
 
+    /**
+     * Loads the background music file into memory.
+     */
     private void loadMusic() {
         String path = MUSIC_PATH + MUSIC_FILE;
         URL url = SoundManager.class.getResource(path);
@@ -86,7 +95,11 @@ public class SoundManager {
     // ==========================================
     // Playback — SFX
     // ==========================================
-
+    /**
+     * Plays a short sound effect if sound effects are enabled and loaded.
+     *
+     * @param effect the sound effect to play
+     */
     public void playSfx(SoundEffect effect) {
         if (!sfxEnabled) return;
         AudioClip clip = clips.get(effect);
@@ -96,16 +109,24 @@ public class SoundManager {
     // ==========================================
     // Playback — Music
     // ==========================================
-
+    /**
+     * Starts or resumes looping background music if available.
+     */
     public void playMusic() {
         if (!musicEnabled || musicPlayer == null) return;
         musicPlayer.play();
     }
 
+    /**
+     * Pauses background music if it is loaded.
+     */
     public void pauseMusic() {
         if (musicPlayer != null) musicPlayer.pause();
     }
 
+    /**
+     * Stops background music if it is loaded.
+     */
     public void stopMusic() {
         if (musicPlayer != null) musicPlayer.stop();
     }
