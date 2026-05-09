@@ -41,7 +41,7 @@ public class GameRenderer {
             imageCache.put(item.getImageName(), getImage(item.getImageName(), fallback, "item"));
         }
 
-        gridTexture = getImage("grid.png", "Grid", "environment");
+        gridTexture = getImage("Grid.png", "Grid", "environment");
     }
 
     private Image loadRequiredAsset(String fileName, String subfolder) {

@@ -44,7 +44,7 @@ public class StartMenuController implements Initializable {
 
     private void loadBackground() {
         try (InputStream stream = StartMenuController.class
-                .getResourceAsStream("/images/environment/startMenuBackground.JPG")) {
+                .getResourceAsStream("/images/environment/StartMenuBackground.JPG")) {
             if (stream != null) {
                 Image img = new Image(stream);
                 if (!img.isError()) {
