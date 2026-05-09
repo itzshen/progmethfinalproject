@@ -10,6 +10,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleConsumer;
 
+/**
+ * Processes keyboard and scroll events, triggering UI toggles, build modes,
+ * and tracking active keys for continuous camera movement.
+ */
 public class InputHandler {
 
     // ==========================================
@@ -32,6 +36,19 @@ public class InputHandler {
     // ==========================================
     // Constructor
     // ==========================================
+
+    /**
+     * Initializes the input handler with callbacks for all user-triggered game actions.
+     *
+     * @param onToggleShop Callback to open/close the shop UI.
+     * @param onToggleInventory Callback to open/close the inventory UI.
+     * @param onBuildMode Callback to activate the machine placement mode.
+     * @param onRemoveMode Callback to activate the machine removal mode.
+     * @param onCycleFacing Callback to rotate the currently selected machine.
+     * @param onZoom Callback to adjust the camera zoom level.
+     * @param isShopVisible Supplier to check if the shop is currently obscuring the screen.
+     * @param isInventoryVisible Supplier to check if the inventory bar is currently active.
+     */
     public InputHandler(Runnable onToggleShop,
                         Runnable onToggleInventory,
                         Runnable onBuildMode,
@@ -53,12 +70,23 @@ public class InputHandler {
     // ==========================================
     // Scene Binding
     // ==========================================
+
+    /**
+     * Binds key and scroll event listeners to the active game scene.
+     *
+     * @param scene The active JavaFX scene to attach inputs to.
+     */
     public void attach(Scene scene) {
         scene.addEventHandler(KeyEvent.KEY_PRESSED,  this::handleKeyPressed);
         scene.addEventHandler(KeyEvent.KEY_RELEASED, this::handleKeyReleased);
         scene.addEventHandler(ScrollEvent.SCROLL,    this::handleScroll);
     }
 
+    /**
+     * Unbinds event listeners to prevent memory leaks or ghost inputs when switching scenes.
+     *
+     * @param scene The JavaFX scene to detach inputs from.
+     */
     public void detach(Scene scene) {
         scene.removeEventHandler(KeyEvent.KEY_PRESSED,  this::handleKeyPressed);
         scene.removeEventHandler(KeyEvent.KEY_RELEASED, this::handleKeyReleased);
@@ -68,8 +96,17 @@ public class InputHandler {
     // ==========================================
     // Accessors
     // ==========================================
+
+    /**
+     * Retrieves the set of currently held keys, typically used by the render loop for continuous camera panning.
+     *
+     * @return A thread-safe set of pressed KeyCodes.
+     */
     public Set<KeyCode> getActiveKeys() { return activeKeys; }
 
+    /**
+     * Forcibly clears all tracked key presses. Useful when losing window focus to prevent infinite panning.
+     */
     public void clearKeys() { activeKeys.clear(); }
 
     // ==========================================

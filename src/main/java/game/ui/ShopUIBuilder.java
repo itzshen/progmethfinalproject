@@ -69,6 +69,11 @@ public class ShopUIBuilder {
     // Private Helpers
     // ==========================================
 
+    /**
+     * Creates and configures a styled TilePane to hold shop buttons in a grid layout.
+     *
+     * @return A newly constructed TilePane with predefined gaps and padding.
+     */
     private static TilePane createTilePane() {
         TilePane pane = new TilePane();
         pane.setPrefColumns(2);
@@ -78,6 +83,15 @@ public class ShopUIBuilder {
         return pane;
     }
 
+    /**
+     * Constructs an interactive button for purchasing a specific machine type.
+     * Includes the machine's image, name, and cost, and wires up the purchase callback.
+     *
+     * @param type The machine type this button represents.
+     * @param imageLookup Function to retrieve the graphical icon for the machine.
+     * @param onBuy Callback executed when the player clicks this buy button.
+     * @return A fully styled and functional JavaFX Button.
+     */
     private static Button buildBuyButton(MachineType type,
                                          Function<MachineType, Image> imageLookup,
                                          Consumer<MachineType> onBuy) {

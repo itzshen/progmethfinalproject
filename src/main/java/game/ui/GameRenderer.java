@@ -13,6 +13,11 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Handles the visual rendering of the game state onto the JavaFX Canvas.
+ * Responsible for caching images, drawing the grid environment, rendering machines and items,
+ * and displaying the placement hologram.
+ */
 public class GameRenderer {
 
     private static final double TILE_SIZE = GameConstants.TILE_SIZE;
@@ -20,10 +25,17 @@ public class GameRenderer {
 
     private Image gridTexture;
 
+    /**
+     * Initializes the rendering engine and preloads all required graphical assets into memory.
+     */
     public GameRenderer() {
         preloadImages();
     }
 
+    /**
+     * Iterates through all MachineType and ItemType enums to load and cache their respective images.
+     * Generates fallback placeholder images if non-essential graphical files are missing.
+     */
     private void preloadImages() {
         for (MachineType type : MachineType.values()) {
             if (type == MachineType.NONE || type.getCategory() == null) continue;
@@ -44,6 +56,13 @@ public class GameRenderer {
         gridTexture = getImage("Grid.png", "Grid", "environment");
     }
 
+    /**
+     * Loads an essential graphical asset from the resources directory.
+     * * @param fileName The exact file name of the image.
+     * @param subfolder The resource subfolder containing the image.
+     * @return The loaded JavaFX Image.
+     * @throws RuntimeException if the asset is missing, forcing an application exit.
+     */
     private Image loadRequiredAsset(String fileName, String subfolder) {
         String path = "/images/" + subfolder + "/" + fileName;
         InputStream stream = GameRenderer.class.getResourceAsStream(path);
@@ -54,6 +73,14 @@ public class GameRenderer {
         return new Image(stream);
     }
 
+    /**
+     * Attempts to load an image from the resources directory, falling back to a procedural placeholder if absent.
+     *
+     * @param filename The exact file name of the image.
+     * @param fallbackText The text to display on the generated placeholder if loading fails.
+     * @param subfolder The resource subfolder containing the image.
+     * @return The loaded JavaFX Image, or a generated placeholder.
+     */
     private Image getImage(String filename, String fallbackText, String subfolder) {
         String path = "/images/" + subfolder + "/" + filename;
         try (InputStream stream = GameRenderer.class.getResourceAsStream(path)) {
@@ -65,6 +92,12 @@ public class GameRenderer {
         return createPlaceholderImage(fallbackText);
     }
 
+    /**
+     * Generates a basic procedural graphical placeholder for missing assets.
+     *
+     * @param text The short text identifier to render on the placeholder.
+     * @return A WritableImage containing the generated placeholder graphic.
+     */
     private Image createPlaceholderImage(String text) {
         int w = 50, h = 50;
         Canvas c = new Canvas(w, h);
@@ -79,16 +112,39 @@ public class GameRenderer {
         return snap == null ? new WritableImage(w, h) : snap;
     }
 
+    /**
+     * Retrieves the cached image associated with a specific machine type.
+     *
+     * @param s The MachineType to look up.
+     * @return The cached JavaFX Image for the given machine.
+     */
     public Image imageForMachineType(MachineType s) {
         return imageCache.get(s.getImageName());
     }
 
+    /**
+     * Converts a Direction enum into its corresponding rotation angle in degrees.
+     *
+     * @param d The facing direction.
+     * @return The angle in degrees (0, 90, 180, or 270).
+     */
     private double facingAngle(Direction d) {
         return switch (d) {
             case RIGHT -> 0; case DOWN -> 90; case LEFT -> 180; case UP -> 270;
         };
     }
 
+    /**
+     * Draws an image onto the graphics context at a specified position with a designated rotation.
+     *
+     * @param gc The GraphicsContext to draw onto.
+     * @param img The image to draw.
+     * @param x The top-left X coordinate.
+     * @param y The top-left Y coordinate.
+     * @param w The width to draw the image.
+     * @param h The height to draw the image.
+     * @param degrees The rotation angle in degrees.
+     */
     private void drawImageRotated(GraphicsContext gc, Image img, double x, double y, double w, double h, double degrees) {
         if (img == null) return;
         gc.save();
@@ -99,6 +155,9 @@ public class GameRenderer {
     }
 
     /**
+     * Renders the complete game state, including the grid floor, grid lines, placed machines,
+     * items currently on conveyors, and the interactive placement hologram.
+     *
      * @param shopVisible      true when the shop popup is open
      * @param inventoryVisible true when the inventory bar is open
      * @param placementMode    current placement mode (BUILD / REMOVE)
@@ -149,6 +208,20 @@ public class GameRenderer {
                 placementFacing, shopVisible, inventoryVisible, placementMode);
     }
 
+    /**
+     * Renders a semi-transparent preview of the currently selected machine at the mouse cursor's grid location.
+     * Highlights green (or blue) for valid placements and red for invalid placements.
+     *
+     * @param gc The GraphicsContext to draw onto.
+     * @param logicGrid The game grid used to validate placement.
+     * @param shopManager The manager determining current inventory counts and active selection.
+     * @param mouseWorldX The current X coordinate of the mouse in world space.
+     * @param mouseWorldY The current Y coordinate of the mouse in world space.
+     * @param placementFacing The current rotation direction for the new machine.
+     * @param shopVisible True if the shop menu is obscuring the screen.
+     * @param inventoryVisible True if the player is actively using the build inventory.
+     * @param placementMode The current interaction mode (must be BUILD to render).
+     */
     private void renderHologram(GraphicsContext gc, GridSystem logicGrid, ShopManager shopManager,
                                 double mouseWorldX, double mouseWorldY, Direction placementFacing,
                                 boolean shopVisible, boolean inventoryVisible, PlacementMode placementMode) {

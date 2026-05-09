@@ -9,8 +9,8 @@ import java.util.function.DoubleConsumer;
 
 /**
  * Owns the two game loops:
- *   1. Render loop  — AnimationTimer, fires every frame, passes delta-time (seconds) to onRenderFrame
- *   2. Logic loop   — ScheduledExecutorService, fires on a fixed interval, calls onLogicTick
+ * 1. Render loop  — AnimationTimer, fires every frame, passes delta-time (seconds) to onRenderFrame
+ * 2. Logic loop   — ScheduledExecutorService, fires on a fixed interval, calls onLogicTick
  *
  * GameLoopManager knows nothing about game state; it only drives timing
  * and delegates all real work through callbacks.
@@ -20,7 +20,11 @@ public class GameLoopManager {
     // ==========================================
     // Constants
     // ==========================================
+
+    /** The speed at which the camera pans across the game world, measured in pixels per second. */
     public static final double PAN_SPEED_PX_PER_SEC = 280.0;
+
+    /** The fixed time interval (in seconds) between each execution of the game logic loop. */
     private static final double LOGIC_INTERVAL_SEC  = 0.5;
 
     // ==========================================
@@ -39,6 +43,13 @@ public class GameLoopManager {
     // ==========================================
     // Constructor
     // ==========================================
+
+    /**
+     * Constructs a new GameLoopManager to coordinate timing for visuals and mechanics.
+     *
+     * @param onRenderFrame Callback executed every UI frame, receiving the elapsed time (delta-time) in seconds.
+     * @param onLogicTick Callback executed at a fixed interval to process game state updates.
+     */
     public GameLoopManager(DoubleConsumer onRenderFrame, Runnable onLogicTick) {
         this.onRenderFrame = onRenderFrame;
         this.onLogicTick   = onLogicTick;
@@ -48,11 +59,17 @@ public class GameLoopManager {
     // Lifecycle
     // ==========================================
 
+    /**
+     * Starts the game engine by launching both the rendering timer and the background logic thread.
+     */
     public void start() {
         startRenderLoop();
         startLogicLoop();
     }
 
+    /**
+     * Safely halts both loops. Shuts down the logic executor thread and stops the animation timer.
+     */
     public void stop() {
         if (renderLoop != null) {
             renderLoop.stop();
@@ -64,6 +81,11 @@ public class GameLoopManager {
         }
     }
 
+    /**
+     * Checks the current running state of the game loop.
+     *
+     * @return true if the engine is actively running, false otherwise.
+     */
     public boolean isRunning() {
         return renderLoop != null;
     }
@@ -72,6 +94,9 @@ public class GameLoopManager {
     // Private — Loop Setup
     // ==========================================
 
+    /**
+     * Initializes and starts the JavaFX AnimationTimer for frame rendering.
+     */
     private void startRenderLoop() {
         lastFrameNanos = 0;
         renderLoop = new AnimationTimer() {
@@ -85,6 +110,9 @@ public class GameLoopManager {
         renderLoop.start();
     }
 
+    /**
+     * Initializes and starts the scheduled executor service for processing background game logic at a fixed rate.
+     */
     private void startLogicLoop() {
         logicThread = Executors.newSingleThreadScheduledExecutor();
         long intervalMs = (long) (LOGIC_INTERVAL_SEC * 1000);

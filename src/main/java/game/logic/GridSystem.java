@@ -7,14 +7,21 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Fixed-size grid of {@link Machine} cells with placement rules and a deterministic
- * two-phase item transfer each {@link #tick()}.
+ * Fixed-size grid that stores machines, manages placement, and advances item
+ * movement during each simulation tick.
  */
 public class GridSystem {
     private final int width;
     private final int height;
     private final Machine[][] cells;
 
+    /**
+     * Creates an empty grid with the given dimensions.
+     *
+     * @param width the number of columns
+     * @param height the number of rows
+     * @throws IllegalArgumentException if either dimension is not positive
+     */
     public GridSystem(int width, int height) {
         if (width <= 0 || height <= 0) {
             throw new IllegalArgumentException("width and height must be positive");
@@ -24,18 +31,38 @@ public class GridSystem {
         this.cells = new Machine[width][height];
     }
 
+    /**
+     * @return the grid width in cells
+     */
     public int getWidth() {
         return width;
     }
 
+    /**
+     * @return the grid height in cells
+     */
     public int getHeight() {
         return height;
     }
 
+    /**
+     * Checks whether a position is within the grid.
+     *
+     * @param x the column index
+     * @param y the row index
+     * @return true if the position is inside the grid
+     */
     public boolean isInside(int x, int y) {
         return x >= 0 && x < width && y >= 0 && y < height;
     }
 
+    /**
+     * Gets the machine at the given position.
+     *
+     * @param x the column index
+     * @param y the row index
+     * @return the machine at the position, or null if outside the grid or empty
+     */
     public synchronized Machine getMachine(int x, int y) {
         if (!isInside(x, y)) {
             return null;
@@ -44,6 +71,11 @@ public class GridSystem {
     }
 
     /**
+     * Places a machine into an empty grid cell.
+     *
+     * @param x the column index
+     * @param y the row index
+     * @param machine the machine to place
      * @return false if out of bounds or cell already occupied
      */
     public synchronized boolean placeMachine(int x, int y, Machine machine) {
@@ -58,6 +90,13 @@ public class GridSystem {
         return true;
     }
 
+    /**
+     * Removes a machine from the given grid cell.
+     *
+     * @param x the column index
+     * @param y the row index
+     * @return true if a machine was removed
+     */
     public synchronized boolean removeMachine(int x, int y) {
         if (!isInside(x, y)) {
             return false;
@@ -70,11 +109,9 @@ public class GridSystem {
     }
 
     /**
-     * One simulation step: collect outgoing transfers using start-of-tick occupancy,
-     * resolve target conflicts (row-major winning source), apply moves, smelt furnaces,
-     * then spawn from droppers that started empty.
+     * Advances the simulation by one step, moving items and then running machine
+     * tick behavior.
      */
-
     public synchronized void tick() {
         // 1. Snapshot the starting state
         boolean[][] hadItemAtStart = new boolean[width][height];
